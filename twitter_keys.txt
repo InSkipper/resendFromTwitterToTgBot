@@ -1,0 +1,5 @@
+*Your API Key*
+*Your API Key Secret*
+*Your Bearer Token*
+*Your Access Token*
+*Your Access Token Secret*
