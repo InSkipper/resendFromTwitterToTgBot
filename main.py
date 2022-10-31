@@ -139,7 +139,11 @@ async def send_tweet(id, tweet):
 
 
 async def handle_updates():
-    updates = await tgbot.get_updates(offset=bot_json["update_offset"], allowed_updates=["message"], timeout=3)
+    try:
+        updates = await tgbot.get_updates(offset=bot_json["update_offset"], allowed_updates=["message"], timeout=3)
+    except:
+        await asyncio.sleep(5)
+        return
     if len(updates) > 0:
         bot_json["update_offset"] = updates[len(updates) - 1].update_id + 1
         await update_json("bot_json.json", bot_json)
