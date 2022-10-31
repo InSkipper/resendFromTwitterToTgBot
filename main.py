@@ -138,7 +138,7 @@ async def send_tweet(id, tweet):
 
 
 async def handle_updates():
-    updates = await tgbot.get_updates(offset=bot_json["update_offset"], allowed_updates=["message"], timeout=1)
+    updates = await tgbot.get_updates(offset=bot_json["update_offset"], allowed_updates=["message"], timeout=5)
     if len(updates) > 0:
         bot_json["update_offset"] = updates[len(updates) - 1].update_id + 1
         await update_json("bot_json.json", bot_json)
@@ -164,3 +164,6 @@ async def main():
 
 
 asyncio.run(main())
+
+# TODO Полный текст ретввита и возможность удаления канала добавить возможность админского оповещения и автоматический перезапуск
+# подумать про количество твитов
