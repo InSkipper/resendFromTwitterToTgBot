@@ -13,8 +13,9 @@ bearer_token = keys[2]
 access_key = keys[3]
 access_secret = keys[4]
 
-auth = tweepy.OAuthHandler(api_key, api_secret)
-auth.set_access_token(access_key, access_secret)
+# auth = tweepy.OAuthHandler(api_key, api_secret)
+# auth.set_access_token(access_key, access_secret)
+auth = tweepy.OAuth2BearerHandler(bearer_token)
 api = tweepy.API(auth)
 
 with open("tg_token.txt") as file:
@@ -138,7 +139,7 @@ async def send_tweet(id, tweet):
 
 
 async def handle_updates():
-    updates = await tgbot.get_updates(offset=bot_json["update_offset"], allowed_updates=["message"], timeout=5)
+    updates = await tgbot.get_updates(offset=bot_json["update_offset"], allowed_updates=["message"], timeout=3)
     if len(updates) > 0:
         bot_json["update_offset"] = updates[len(updates) - 1].update_id + 1
         await update_json("bot_json.json", bot_json)
