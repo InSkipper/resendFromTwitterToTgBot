@@ -156,7 +156,7 @@ async def handle_updates():
 
 async def work():
     while True:
-        print(bot_json)
+        # print(bot_json)
         await handle_updates()
         await handle_tweets()
 
