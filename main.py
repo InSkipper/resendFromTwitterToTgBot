@@ -5,8 +5,6 @@ import telebot
 import json
 import logging
 
-logging.basicConfig(level=logging.DEBUG, filename="last_exception.log")
-
 keys = open("twitter_keys.txt").readlines()
 keys = [key.rstrip("\n") for key in keys]
 
@@ -172,6 +170,5 @@ async def main():
 
 
 asyncio.run(main())
-logging.exception("last_ex:")
 # TODO Полный текст ретввита и возможность удаления канала добавить возможность админского оповещения и автоматический перезапуск
 # подумать про количество твитов
