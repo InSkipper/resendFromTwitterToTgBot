@@ -95,9 +95,16 @@ async def handle_remove(message):
     else:
         user = message.from_user
     follower = await find_follower(user.id)
+    if follower is None:
+        await tgbot.send_message(user.id,
+                                 f'Вы не на что не подписаны. Для начала '
+                                 f'воспользуйтесь командой /add')
+        return
+    
     if len(twitter_id) == 0:
         await tgbot.send_message(user.id,
-                                 f'После /remove нужно написать id пользователя в твиттер. Этот id можно посмотреть по '
+                                 f'После /remove нужно написать id пользователя в твиттер. '
+                                 f'Этот id можно посмотреть по '
                                  f'ссылке на его профиль в твиттере.\n'
                                  f'Вы подписаны на:\n\t'
                                  + '\n\t'.join(await get_twitter_ids(follower)))
@@ -107,10 +114,11 @@ async def handle_remove(message):
     await remove_sign(follower, twitter_id)
 
 
-async def find_follower(tg_id: int) -> dict:
+async def find_follower(tg_id: int):
     for follower in bot_json["followers"]:
         if follower["tg_id"] == tg_id:
             return follower
+    return None
 
 
 async def get_twitter_ids(follower: dict) -> list:
@@ -196,7 +204,7 @@ async def send_tweet(id, tweet):
 
 async def handle_updates():
     try:
-        updates = await tgbot.get_updates(offset=bot_json["update_offset"], allowed_updates=["message"], timeout=20)
+        updates = await tgbot.get_updates(offset=bot_json["update_offset"], allowed_updates=["message"], timeout=10)
     except:
         await asyncio.sleep(5)
         return
