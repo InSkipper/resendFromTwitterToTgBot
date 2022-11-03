@@ -1,9 +1,9 @@
-from telebot.async_telebot import AsyncTeleBot
 import asyncio
-import tweepy
-import telebot
 import json
-import logging
+
+import telebot
+import tweepy
+from telebot.async_telebot import AsyncTeleBot
 
 keys = open("twitter_keys.txt").readlines()
 keys = [key.rstrip("\n") for key in keys]
@@ -14,8 +14,6 @@ bearer_token = keys[2]
 access_key = keys[3]
 access_secret = keys[4]
 
-# auth = tweepy.OAuthHandler(api_key, api_secret)
-# auth.set_access_token(access_key, access_secret)
 auth = tweepy.OAuth2BearerHandler(bearer_token)
 api = tweepy.API(auth)
 
@@ -32,10 +30,10 @@ async def resolve_json(file_name: str):
     with open(file_name, "r") as file:
         lines = file.readlines()
         length = len(lines)
-    if length == 0:
-        await update_json(file_name, bot_json)
-    else:
+    if length == 1:
         bot_json = json.loads(lines[0])
+    else:
+        await update_json()
 
 
 @tgbot.message_handler(commands=["start"])
@@ -77,13 +75,59 @@ async def add_to_signs(message):
     try:
         tweets = api.user_timeline(screen_name=twitter_id, count=1)
     except:
-        await tgbot.send_message(user.id, f"Не могу найти пользователя с id *{twitter_id}*")
+        await tgbot.send_message(user.id, f"Не могу найти пользователя с id *{twitter_id}*."
+                                          f"Либо у него ещё нет твитов")
         return
 
     if len(tweets) > 0:
         await add_sign(user.id, twitter_id, tweets[0].id)
     else:
         await add_sign(user.id, twitter_id, 0)
+
+
+@tgbot.message_handler(commands=["remove"])
+@tgbot.channel_post_handler(commands=["remove"])
+async def handle_remove(message):
+    print(message.text)
+    twitter_id = message.text.replace("/remove", "").strip()
+    if message.from_user is None:
+        user = message.chat
+    else:
+        user = message.from_user
+    follower = await find_follower(user.id)
+    if len(twitter_id) == 0:
+        await tgbot.send_message(user.id,
+                                 f'После /remove нужно написать id пользователя в твиттер. Этот id можно посмотреть по '
+                                 f'ссылке на его профиль в твиттере.\n'
+                                 f'Вы подписаны на:\n\t'
+                                 + '\n\t'.join(await get_twitter_ids(follower)))
+
+        return
+    print(twitter_id)
+    await remove_sign(follower, twitter_id)
+
+
+async def find_follower(tg_id: int) -> dict:
+    for follower in bot_json["followers"]:
+        if follower["tg_id"] == tg_id:
+            return follower
+
+
+async def get_twitter_ids(follower: dict) -> list:
+    return [sign["twitter_id"] for sign in follower["signs"]]
+
+
+async def remove_sign(follower: dict, twitter_id: str):
+    for i in range(len(follower["signs"])):
+        if twitter_id == follower["signs"][i]["twitter_id"]:
+            del follower["signs"][i]
+            await update_json()
+            await tgbot.send_message(follower["tg_id"], f"Отписал вас от уведомлений пользователя "
+                                                        f"*{twitter_id}*")
+            return
+
+    await tgbot.send_message(follower["tg_id"], f"Кажется, вы ошиблись в написании команды. "
+                                                f"Не могу найти пользователя *{twitter_id}*")
 
 
 async def add_sign(tg_id, twitter_id, since_id):
@@ -99,14 +143,14 @@ async def add_sign(tg_id, twitter_id, since_id):
                     "signs": []}
         bot_json["followers"].append(follower)
 
-    twitt_ids = [follower["signs"][sign]["twitter_id"] for sign in range(len(follower["signs"]))]
+    twitt_ids = await get_twitter_ids(follower)
     if twitter_id in twitt_ids:
         await tgbot.send_message(tg_id, f"Вы уже подписаны на уведомления от *{twitter_id}*!")
     else:
         follower["signs"].append(sign)
         await tgbot.send_message(tg_id, f"Теперь я буду отправлять сюда твиты от *{twitter_id}*!")
 
-    await update_json("bot_json.json", bot_json)
+    await update_json()
 
 
 async def handle_tweets():
@@ -124,44 +168,54 @@ async def handle_tweets():
                 await send_tweet(follower["tg_id"], tweet)
                 sign["since_id"] = tweet.id
 
-    await update_json("bot_json.json", bot_json)
+    await update_json()
 
 
 async def send_tweet(id, tweet):
-    about_message = f"Новый твит от @{tweet._json['user']['screen_name']}\nURL:https://twitter.com/twitter/statuses/{tweet.id}\n__________\n\n"
+    about_message = f"Новый твит от @{tweet._json['user']['screen_name']}\n" \
+                    f"URL:https://twitter.com/twitter/statuses/{tweet.id}\n" \
+                    f"__________\n\n"
+    if hasattr(tweet, "retweeted_status"):
+        status_id = tweet.retweeted_status.id
+        retweet = api.get_status(status_id, tweet_mode="extended")
+        full_text = f"Retweet from @{retweet._json['user']['screen_name']}\n\n"
+        full_text += retweet.full_text
+        print("full = " + full_text)
+    else:
+        full_text = tweet.full_text
+    full_text = about_message + full_text
     if "media" in tweet.entities \
             and "media" in tweet.extended_entities:
         media = tweet.extended_entities["media"]
         photos = [telebot.types.InputMediaPhoto(photo["media_url"]) for photo in media]
-        photos[0].caption = about_message + tweet.full_text
+        photos[0].caption = full_text
         await tgbot.send_media_group(id, photos)
     else:
-        await tgbot.send_message(id, about_message + tweet.full_text)
+        await tgbot.send_message(id, full_text)
 
 
 async def handle_updates():
     try:
-        updates = await tgbot.get_updates(offset=bot_json["update_offset"], allowed_updates=["message"], timeout=3)
+        updates = await tgbot.get_updates(offset=bot_json["update_offset"], allowed_updates=["message"], timeout=20)
     except:
         await asyncio.sleep(5)
         return
     if len(updates) > 0:
         bot_json["update_offset"] = updates[len(updates) - 1].update_id + 1
-        await update_json("bot_json.json", bot_json)
+        await update_json()
 
     await tgbot.process_new_updates(updates)
 
 
 async def work():
     while True:
-        # print(bot_json)
         await handle_updates()
         await handle_tweets()
 
 
-async def update_json(file_name: str, json_dict: dict):
-    with open(file_name, "w") as file:
-        json.dump(json_dict, file)
+async def update_json():
+    with open("bot_json.json", "w") as file:
+        json.dump(bot_json, file)
 
 
 async def main():
@@ -170,5 +224,4 @@ async def main():
 
 
 asyncio.run(main())
-# TODO Полный текст ретввита и возможность удаления канала добавить возможность админского оповещения и автоматический перезапуск
-# подумать про количество твитов
+# TODO Полный текст ретввита и добавить возможность админского оповещения
