@@ -63,7 +63,7 @@ async def handle_chat_start(message):
 @tgbot.channel_post_handler(commands=["add"])
 @tgbot.message_handler(commands=["add"])
 async def add_to_signs(message):
-    twitter_id = str(message.text).strip("/add ")
+    twitter_id = message.text.replace("/add", "").strip()
     if message.from_user is None:
         user = message.chat
     else:
