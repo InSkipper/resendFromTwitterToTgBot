@@ -169,7 +169,7 @@ async def handle_tweets():
         for sign in follower["signs"]:
             twitter_id = sign["twitter_id"]
             since_id = sign["since_id"]
-            # print(f"Проверка пользователя {twitter_id} для уведомления канала {follower['tg_id']}")
+            print(f"Проверка пользователя {twitter_id} для уведомления канала {follower['tg_id']}")
 
             try:
                 if since_id == 0:
@@ -219,9 +219,9 @@ async def handle_updates():
         return
     if len(updates) > 0:
         bot_json["update_offset"] = updates[len(updates) - 1].update_id + 1
+        print("Запрос от ТГ")
         await update_json()
-
-    await tgbot.process_new_updates(updates)
+        await tgbot.process_new_updates(updates)
 
 
 async def work():
