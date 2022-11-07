@@ -169,10 +169,14 @@ async def handle_tweets():
             since_id = sign["since_id"]
             # print(f"Проверка пользователя {twitter_id} для уведомления канала {follower['tg_id']}")
 
-            if since_id == 0:
-                tweets = api.user_timeline(screen_name=twitter_id, tweet_mode="extended", count=1)
-            else:
-                tweets = api.user_timeline(screen_name=twitter_id, tweet_mode="extended", since_id=since_id)
+            try:
+                if since_id == 0:
+                    tweets = api.user_timeline(screen_name=twitter_id, tweet_mode="extended", count=1)
+                else:
+                    tweets = api.user_timeline(screen_name=twitter_id, tweet_mode="extended", since_id=since_id)
+            except:
+                print("Произошла ОБИБКА поиска пользователя твиттер")
+                return
             for tweet in reversed(tweets):
                 await send_tweet(follower["tg_id"], tweet)
                 sign["since_id"] = tweet.id
@@ -209,7 +213,6 @@ async def handle_updates():
                                           timeout=update_time)
     except:
         print("Произошла ОШИБКА поиска новый обновлений от ТГ")
-        await asyncio.sleep(1)
         return
     if len(updates) > 0:
         bot_json["update_offset"] = updates[len(updates) - 1].update_id + 1
