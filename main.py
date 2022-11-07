@@ -17,7 +17,7 @@ access_key = keys[3]
 access_secret = keys[4]
 
 auth = tweepy.OAuth2BearerHandler(bearer_token)
-api = tweepy.API(auth, timeout=2)
+api = tweepy.API(auth, timeout=1)
 
 with open("tg_token.txt") as file:
     tg_token = file.readlines()[0].rstrip("\n")
@@ -169,15 +169,15 @@ async def handle_tweets():
 
             twitter_id = sign["twitter_id"]
             since_id = sign["since_id"]
-            print(f"Проверка пользователя {twitter_id} для уведомления канала {follower['tg_id']}")
+            # print(f"Проверка пользователя {twitter_id} для уведомления канала {follower['tg_id']}")
 
             try:
-                print("\tSTART")
+                # print("\tSTART")
                 if since_id == 0:
                     tweets = api.user_timeline(screen_name=twitter_id, tweet_mode="extended", count=1)
                 else:
                     tweets = api.user_timeline(screen_name=twitter_id, tweet_mode="extended", since_id=since_id)
-                print("\tEND")
+                # print("\tEND")
             except:
                 print("Произошла ОБИБКА поиска пользователя твиттер")
                 return
@@ -197,7 +197,7 @@ async def send_tweet(id, tweet):
         retweet = api.get_status(status_id, tweet_mode="extended")
         full_text = f"Retweet from @{retweet._json['user']['screen_name']}\n\n"
         full_text += retweet.full_text
-        print("full = " + full_text)
+        # print("full = " + full_text)
     else:
         full_text = tweet.full_text
     full_text = about_message + full_text
@@ -220,7 +220,7 @@ async def handle_updates():
         return
     if len(updates) > 0:
         bot_json["update_offset"] = updates[len(updates) - 1].update_id + 1
-        print("Запрос от ТГ")
+        # print("Запрос от ТГ")
         await update_json()
         await tgbot.process_new_updates(updates)
 
