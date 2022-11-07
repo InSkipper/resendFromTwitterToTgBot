@@ -5,7 +5,7 @@ import telebot
 import tweepy
 from telebot.async_telebot import AsyncTeleBot
 
-update_time = 3
+twitter_update_time = 3
 
 keys = open("twitter_keys.txt").readlines()
 keys = [key.rstrip("\n") for key in keys]
@@ -163,6 +163,8 @@ async def add_sign(tg_id, twitter_id, since_id):
 
 
 async def handle_tweets():
+    await asyncio.sleep(twitter_update_time)
+
     for follower in bot_json["followers"]:
         for sign in follower["signs"]:
             twitter_id = sign["twitter_id"]
@@ -194,7 +196,7 @@ async def send_tweet(id, tweet):
         full_text = f"Retweet from @{retweet._json['user']['screen_name']}\n\n"
         full_text += retweet.full_text
         print("full = " + full_text)
-    else: 
+    else:
         full_text = tweet.full_text
     full_text = about_message + full_text
     if "media" in tweet.entities \
@@ -210,9 +212,10 @@ async def send_tweet(id, tweet):
 async def handle_updates():
     try:
         updates = await tgbot.get_updates(offset=bot_json["update_offset"], allowed_updates=["message"],
-                                          timeout=update_time)
+                                          timeout=1)
     except:
         print("Произошла ОШИБКА поиска новый обновлений от ТГ")
+        await asyncio.sleep(3)
         return
     if len(updates) > 0:
         bot_json["update_offset"] = updates[len(updates) - 1].update_id + 1
