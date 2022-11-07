@@ -5,6 +5,8 @@ import telebot
 import tweepy
 from telebot.async_telebot import AsyncTeleBot
 
+update_time = 3
+
 keys = open("twitter_keys.txt").readlines()
 keys = [key.rstrip("\n") for key in keys]
 
@@ -88,7 +90,6 @@ async def add_to_signs(message):
 @tgbot.message_handler(commands=["remove"])
 @tgbot.channel_post_handler(commands=["remove"])
 async def handle_remove(message):
-    print(message.text)
     twitter_id = message.text.replace("/remove", "").strip()
     if message.from_user is None:
         user = message.chat
@@ -100,7 +101,7 @@ async def handle_remove(message):
                                  f'Вы не на что не подписаны. Для начала '
                                  f'воспользуйтесь командой /add')
         return
-    
+
     if len(twitter_id) == 0:
         await tgbot.send_message(user.id,
                                  f'После /remove нужно написать id пользователя в твиттер. '
@@ -110,7 +111,7 @@ async def handle_remove(message):
                                  + '\n\t'.join(await get_twitter_ids(follower)))
 
         return
-    print(twitter_id)
+
     await remove_sign(follower, twitter_id)
 
 
@@ -166,7 +167,7 @@ async def handle_tweets():
         for sign in follower["signs"]:
             twitter_id = sign["twitter_id"]
             since_id = sign["since_id"]
-            print(f"Проверка пользователя {twitter_id} для уведомления канала {follower['tg_id']}")
+            # print(f"Проверка пользователя {twitter_id} для уведомления канала {follower['tg_id']}")
 
             if since_id == 0:
                 tweets = api.user_timeline(screen_name=twitter_id, tweet_mode="extended", count=1)
@@ -204,9 +205,11 @@ async def send_tweet(id, tweet):
 
 async def handle_updates():
     try:
-        updates = await tgbot.get_updates(offset=bot_json["update_offset"], allowed_updates=["message"], timeout=10)
+        updates = await tgbot.get_updates(offset=bot_json["update_offset"], allowed_updates=["message"],
+                                          timeout=update_time)
     except:
-        await asyncio.sleep(5)
+        print("Произошла ОШИБКА поиска новый обновлений от ТГ")
+        await asyncio.sleep(1)
         return
     if len(updates) > 0:
         bot_json["update_offset"] = updates[len(updates) - 1].update_id + 1
