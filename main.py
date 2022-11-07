@@ -31,10 +31,9 @@ async def resolve_json(file_name: str):
     global bot_json
     with open(file_name, "r") as file:
         lines = file.readlines()
-        length = len(lines)
-    if length == 1:
+    try:
         bot_json = json.loads(lines[0])
-    else:
+    except:
         await update_json()
 
 
@@ -126,6 +125,12 @@ async def get_twitter_ids(follower: dict) -> list:
     return [sign["twitter_id"] for sign in follower["signs"]]
 
 
+async def delete_follower(follower: dict):
+    for i in range(len(bot_json["followers"])):
+        if bot_json["followers"][i]["tg_id"] == follower["tg_id"]:
+            del bot_json["followers"][i]
+
+
 async def remove_sign(follower: dict, twitter_id: str):
     for i in range(len(follower["signs"])):
         if twitter_id == follower["signs"][i]["twitter_id"]:
@@ -133,6 +138,9 @@ async def remove_sign(follower: dict, twitter_id: str):
             await update_json()
             await tgbot.send_message(follower["tg_id"], f"Отписал вас от уведомлений пользователя "
                                                         f"*{twitter_id}*")
+            if len(follower["signs"]) == 0:
+                await delete_follower(follower)
+                await update_json()
             return
 
     await tgbot.send_message(follower["tg_id"], f"Кажется, вы ошиблись в написании команды. "
@@ -185,7 +193,7 @@ async def handle_tweets():
                 await send_tweet(follower["tg_id"], tweet)
                 sign["since_id"] = tweet.id
 
-    await update_json()
+        await update_json()
 
 
 async def send_tweet(id, tweet):
@@ -227,7 +235,7 @@ async def handle_updates():
 
 async def work():
     while True:
-        # asyncio.create_task(handle_updates())
+        await handle_updates()
         await handle_tweets()
 
 
