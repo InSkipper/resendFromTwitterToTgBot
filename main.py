@@ -163,10 +163,10 @@ async def add_sign(tg_id, twitter_id, since_id):
 
 
 async def handle_tweets():
-    await asyncio.sleep(twitter_update_time)
-
     for follower in bot_json["followers"]:
         for sign in follower["signs"]:
+            await handle_updates()
+
             twitter_id = sign["twitter_id"]
             since_id = sign["since_id"]
             print(f"Проверка пользователя {twitter_id} для уведомления канала {follower['tg_id']}")
@@ -226,7 +226,7 @@ async def handle_updates():
 
 async def work():
     while True:
-        await handle_updates()
+        # asyncio.create_task(handle_updates())
         await handle_tweets()
 
 
@@ -241,4 +241,3 @@ async def main():
 
 
 asyncio.run(main())
-# TODO Полный текст ретввита и добавить возможность админского оповещения
