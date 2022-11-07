@@ -17,7 +17,7 @@ access_key = keys[3]
 access_secret = keys[4]
 
 auth = tweepy.OAuth2BearerHandler(bearer_token)
-api = tweepy.API(auth)
+api = tweepy.API(auth, timeout=2)
 
 with open("tg_token.txt") as file:
     tg_token = file.readlines()[0].rstrip("\n")
