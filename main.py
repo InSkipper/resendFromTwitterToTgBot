@@ -194,7 +194,7 @@ async def send_tweet(id, tweet):
         full_text = f"Retweet from @{retweet._json['user']['screen_name']}\n\n"
         full_text += retweet.full_text
         print("full = " + full_text)
-    else:
+    else: 
         full_text = tweet.full_text
     full_text = about_message + full_text
     if "media" in tweet.entities \
